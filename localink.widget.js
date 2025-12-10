@@ -118,8 +118,18 @@
   if (!res.ok) throw new Error("Formspree error");
 
   // Success UI
-  document.getElementById("lk_form").style.display = "none";
-  document.getElementById("lk_success").style.display = "block";
+const form = document.getElementById("lk_form");
+const success = document.getElementById("lk_success");
+
+// Safety check
+if (!form || !success) {
+  console.error("Modal elements missing");
+  return;
+}
+
+form.style.display = "none";
+success.style.display = "block";
+
 
 } catch (err) {
   console.error("Submission failed", err);
