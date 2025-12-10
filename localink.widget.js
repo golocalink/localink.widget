@@ -1,3 +1,5 @@
+console.log("Localink Widget JS Loaded");
+
 (function () {
 
   const FORM_URL = "https://formspree.io/f/mzznvgvz";
