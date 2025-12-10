@@ -105,15 +105,25 @@
 
     let ok = true;
 
-    try {
-      const res = await fetch(FORM_URL, {
-  method: "POST",
-  headers: { 
-    "Content-Type": "application/json",
-    "Accept": "application/json"
-  },
-  body: JSON.stringify(payload),
-});
+   try {
+  const res = await fetch(FORM_URL, {
+    method: "POST",
+    headers: { 
+      "Content-Type": "application/json",
+      "Accept": "application/json"
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) throw new Error("Formspree error");
+
+  // Success UI
+  document.getElementById("lk_form").style.display = "none";
+  document.getElementById("lk_success").style.display = "block";
+
+} catch (err) {
+  console.error("Submission failed", err);
+}
 
 
       if (!res.ok) {
