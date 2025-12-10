@@ -1,15 +1,20 @@
 (function () {
 
+  // ================================
+  // CONFIG
+  // ================================
   const FORM_URL = "https://formspree.io/f/mzznvgvz";
 
-  // Inject CSS
+  // ================================
+  // CSS INJECTION
+  // ================================
   const css = `
   .lk-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;justify-content:center;align-items:center;z-index:999999;font-family:Arial,sans-serif;}
   .lk-modal{background:#fff;padding:32px 28px;border-radius:16px;max-width:420px;width:92%;box-shadow:0 8px 25px rgba(0,0,0,.15);text-align:center;animation:lkpop .25s ease-out;}
   @keyframes lkpop{from{opacity:0;transform:scale(.92);}to{opacity:1;transform:scale(1);}}
   .lk-input{width:100%;padding:14px;margin:8px 0;border-radius:12px;border:1px solid #ccc;font-size:16px;box-sizing:border-box;}
   .lk-input.lk-error{border-color:#ff4d6d;}
-  .lk-button{width:100%;padding:16px;margin-top:14px;background:#ff4d6d;border:none;color:#fff;font-size:18px;border-radius:12px;cursor:pointer;}
+  .lk-button{width:100%;padding:16px;margin-top:14px;background:#ff4d6d;border:none;color:#fff;font-size:18px;border-radius:12px;cursor:pointer;position:relative;}
   .lk-spinner{width:20px;height:20px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:lks 1s linear infinite;display:none;margin:0 auto;}
   @keyframes lks{to{transform:rotate(360deg);}}
   .lk-close{margin-top:15px;cursor:pointer;display:inline-block;color:#777;font-size:15px;}
@@ -17,15 +22,17 @@
   .lk-check{font-size:60px;color:#27c200;animation:lkcheck .25s ease-out;}
   @keyframes lkcheck{from{opacity:0;transform:scale(0);}to{opacity:1;transform:scale(1);}}
   `;
-
   const style = document.createElement("style");
   style.textContent = css;
   document.head.appendChild(style);
 
-  // Build modal HTML
+  // ================================
+  // MODAL HTML
+  // ================================
   const modal = document.createElement("div");
   modal.className = "lk-backdrop";
   modal.id = "lk-backdrop";
+
   modal.innerHTML = `
     <div class="lk-modal">
       <div id="lk-form">
@@ -58,7 +65,9 @@
 
   document.body.appendChild(modal);
 
-  // Open modal when button clicked
+  // ================================
+  // OPEN MODAL WHEN BUTTON CLICKED
+  // ================================
   document.addEventListener("click", function (e) {
     const link = e.target.closest(".localink-check");
     if (!link) return;
@@ -71,22 +80,27 @@
     modal.style.display = "flex";
   });
 
-  // Close modal
+  // ================================
+  // CLOSE MODAL
+  // ================================
   document.getElementById("lk_close").onclick = () =>
     (modal.style.display = "none");
 
-  // Form submission
+  // ================================
+  // SUBMIT FORM
+  // ================================
   document.getElementById("lk_submit").onclick = async function () {
+
     const email = document.getElementById("lk_email");
     const postal = document.getElementById("lk_postal");
 
+    // Validate
     email.classList.remove("lk-error");
     postal.classList.remove("lk-error");
-
     if (!email.value) { email.classList.add("lk-error"); return; }
     if (!postal.value) { postal.classList.add("lk-error"); return; }
 
-    // Loading animation
+    // Start loading animation
     document.getElementById("lk_submit_text").style.display = "none";
     document.getElementById("lk_spinner").style.display = "block";
 
@@ -100,28 +114,25 @@
       source: "Localink Widget"
     };
 
+    // Safe fetch wrapper — avoids spinner freeze
     try {
-  await fetch(FORM_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+      await fetch(FORM_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+    } catch (err) {
+      console.warn("Localink widget: submission error (ignored for MVP):", err);
+    }
 
-} catch (err) {
-  console.warn("Form submission error (safe to ignore for MVP):", err);
-}
-
-// Move to success state no matter what
-document.getElementById("lk_form").style.display = "none";
-document.getElementById("lk_success").style.display = "block";
-
-document.getElementById("lk_submit_text").style.display = "block";
-document.getElementById("lk_spinner").style.display = "none";
-
-
-    // Success UI
+    // Always proceed to success state
     document.getElementById("lk_form").style.display = "none";
     document.getElementById("lk_success").style.display = "block";
+
+    // Reset button UI (in case merchant reopens)
+    document.getElementById("lk_submit_text").style.display = "block";
+    document.getElementById("lk_spinner").style.display = "none";
   };
 
 })();
+
