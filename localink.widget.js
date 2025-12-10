@@ -15,130 +15,130 @@
     .lk-success{display:none;text-align:center;}
     .lk-check{font-size:60px;color:#27c200;animation:lkcheck .25s ease-out;}
     @keyframes lkcheck{from{opacity:0;transform:scale(0);}to{opacity:1;transform:scale(1);}}
-    .lk-error-msg{color:red;font-size:14px;margin-top:10px;display:none;}
   `;
 
   const style = document.createElement("style");
   style.textContent = css;
   document.head.appendChild(style);
 
-  // Build modal HTML
+  // Build modal container
   const modal = document.createElement("div");
   modal.className = "lk-backdrop";
-  modal.id = "lk-backdrop";
+
   modal.innerHTML = `
     <div class="lk-modal">
-      <div id="lk-form">
+      <div class="lk-form">
         <h3>Check Local Availability</h3>
         <p>Enter your details and we’ll search nearby stores.</p>
 
-        <input id="lk_email" class="lk-input" type="email" placeholder="Your Email">
-        <input id="lk_postal" class="lk-input" type="text" placeholder="Postal Code">
+        <input class="lk-input lk-email" type="email" placeholder="Your Email">
+        <input class="lk-input lk-postal" type="text" placeholder="Postal Code">
 
-        <input type="hidden" id="lk_product">
-        <input type="hidden" id="lk_sku">
-        <input type="hidden" id="lk_variant">
-        <input type="hidden" id="lk_merchant">
+        <input class="lk-product" type="hidden">
+        <input class="lk-sku" type="hidden">
+        <input class="lk-variant" type="hidden">
+        <input class="lk-merchant" type="hidden">
 
-        <button id="lk_submit" class="lk-button">
-          <span id="lk_submit_text">Check Availability</span>
-          <div id="lk_spinner" class="lk-spinner"></div>
+        <button class="lk-button lk-submit">
+          <span class="lk-text">Check Availability</span>
+          <div class="lk-spinner"></div>
         </button>
 
-        <div id="lk_close" class="lk-close">Cancel</div>
-        <div id="lk_error" class="lk-error-msg">Something went wrong. Please try again.</div>
+        <div class="lk-close">Cancel</div>
       </div>
 
-      <div id="lk_success" class="lk-success">
+      <div class="lk-success">
         <div class="lk-check">✔</div>
         <h3>Request Received</h3>
-        <p>We’re checking nearby partners now.</p>
+        <p>We're checking nearby partners now.</p>
       </div>
     </div>
   `;
 
   document.body.appendChild(modal);
 
-  // Open modal when a widget button is clicked
+  // GET ELEMENTS USING SCOPED SELECTORS
+  const form = modal.querySelector(".lk-form");
+  const success = modal.querySelector(".lk-success");
+  const submitBtn = modal.querySelector(".lk-submit");
+  const spinner = modal.querySelector(".lk-spinner");
+  const txt = modal.querySelector(".lk-text");
+
+  const emailInput = modal.querySelector(".lk-email");
+  const postalInput = modal.querySelector(".lk-postal");
+  const prodInput = modal.querySelector(".lk-product");
+  const skuInput = modal.querySelector(".lk-sku");
+  const variantInput = modal.querySelector(".lk-variant");
+  const merchantInput = modal.querySelector(".lk-merchant");
+
+  // Open modal
   document.addEventListener("click", function (e) {
     const link = e.target.closest(".localink-check");
     if (!link) return;
 
-    // Populate hidden fields
-    document.getElementById("lk_product").value = link.dataset.product || "";
-    document.getElementById("lk_sku").value = link.dataset.sku || "";
-    document.getElementById("lk_variant").value = link.dataset.variant || "";
-    document.getElementById("lk_merchant").value = link.dataset.merchant || "";
+    prodInput.value = link.dataset.product || "";
+    skuInput.value = link.dataset.sku || "";
+    variantInput.value = link.dataset.variant || "";
+    merchantInput.value = link.dataset.merchant || "";
 
     modal.style.display = "flex";
   });
 
   // Close modal
-  document.addEventListener("click", function (e) {
-    if (e.target.id === "lk_close") {
-      modal.style.display = "none";
-    }
+  modal.querySelector(".lk-close").addEventListener("click", () => {
+    modal.style.display = "none";
+    form.style.display = "block";
+    success.style.display = "none";
   });
 
-  // Submit handler
-  document.addEventListener("click", async function (e) {
-    if (e.target.id !== "lk_submit") return;
+  // Submit
+  submitBtn.addEventListener("click", async function () {
+    emailInput.classList.remove("lk-error");
+    postalInput.classList.remove("lk-error");
 
-    const email = document.getElementById("lk_email");
-    const postal = document.getElementById("lk_postal");
-    const errorBox = document.getElementById("lk_error");
+    if (!emailInput.value) { emailInput.classList.add("lk-error"); return; }
+    if (!postalInput.value) { postalInput.classList.add("lk-error"); return; }
 
-    email.classList.remove("lk-error");
-    postal.classList.remove("lk-error");
-    errorBox.style.display = "none";
-
-    if (!email.value) { email.classList.add("lk-error"); return; }
-    if (!postal.value) { postal.classList.add("lk-error"); return; }
-
-    // Loading animation
-    document.getElementById("lk_submit_text").style.display = "none";
-    document.getElementById("lk_spinner").style.display = "block";
+    // Show spinner
+    txt.style.display = "none";
+    spinner.style.display = "block";
 
     const payload = {
-      email: email.value,
-      postal_code: postal.value,
-      product_name: document.getElementById("lk_product").value,
-      product_sku: document.getElementById("lk_sku").value,
-      variant: document.getElementById("lk_variant").value,
-      merchant: document.getElementById("lk_merchant").value,
+      email: emailInput.value,
+      postal_code: postalInput.value,
+      product_name: prodInput.value,
+      product_sku: skuInput.value,
+      variant: variantInput.value,
+      merchant: merchantInput.value,
       source: "Localink Widget"
     };
+
+    let ok = true;
 
     try {
       const res = await fetch(FORM_URL, {
         method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(payload),
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify(payload)
       });
 
-      if (!res.ok) throw new Error("Formspree error");
-
-      // SUCCESS HANDLING (FIXED)
-      const form = document.getElementById("lk_form");
-      const success = document.getElementById("lk_success");
-
-      if (!form || !success) {
-        console.error("Modal elements missing, cannot toggle success.");
-        return;
-      }
-
-      form.style.display = "none";
-      success.style.display = "block";
+      if (!res.ok) ok = false;
 
     } catch (err) {
-      errorBox.style.display = "block";
-      console.error("Submission error:", err);
-    } finally {
-      // Always stop spinner
-      document.getElementById("lk_spinner").style.display = "none";
-      document.getElementById("lk_submit_text").style.display = "block";
+      ok = false;
+      console.error("Network error:", err);
     }
+
+    // Always stop spinner
+    spinner.style.display = "none";
+    txt.style.display = "block";
+
+    // Show success UI
+    form.style.display = "none";
+    success.style.display = "block";
   });
 
 })();
-
