@@ -1,5 +1,4 @@
 (function () {
-
   const FORM_URL = "https://formspree.io/f/mzznvgvz";
 
   // Inject CSS
@@ -16,13 +15,14 @@
     .lk-success{display:none;text-align:center;}
     .lk-check{font-size:60px;color:#27c200;animation:lkcheck .25s ease-out;}
     @keyframes lkcheck{from{opacity:0;transform:scale(0);}to{opacity:1;transform:scale(1);}}
+    .lk-error-msg{color:red;font-size:14px;margin-top:10px;display:none;}
   `;
 
   const style = document.createElement("style");
   style.textContent = css;
   document.head.appendChild(style);
 
-  // Build modal
+  // Build modal HTML
   const modal = document.createElement("div");
   modal.className = "lk-backdrop";
   modal.id = "lk-backdrop";
@@ -46,22 +46,25 @@
         </button>
 
         <div id="lk_close" class="lk-close">Cancel</div>
+        <div id="lk_error" class="lk-error-msg">Something went wrong. Please try again.</div>
       </div>
 
       <div id="lk_success" class="lk-success">
         <div class="lk-check">✔</div>
         <h3>Request Received</h3>
-        <p>We're checking nearby partners now.</p>
+        <p>We’re checking nearby partners now.</p>
       </div>
     </div>
   `;
+
   document.body.appendChild(modal);
 
-  // Open modal
+  // Open modal when a widget button is clicked
   document.addEventListener("click", function (e) {
     const link = e.target.closest(".localink-check");
     if (!link) return;
 
+    // Populate hidden fields
     document.getElementById("lk_product").value = link.dataset.product || "";
     document.getElementById("lk_sku").value = link.dataset.sku || "";
     document.getElementById("lk_variant").value = link.dataset.variant || "";
@@ -71,27 +74,30 @@
   });
 
   // Close modal
-  document.getElementById("lk_close").onclick = () =>
-    (modal.style.display = "none");
+  document.addEventListener("click", function (e) {
+    if (e.target.id === "lk_close") {
+      modal.style.display = "none";
+    }
+  });
 
   // Submit handler
-  document.getElementById("lk_submit").onclick = async function () {
+  document.addEventListener("click", async function (e) {
+    if (e.target.id !== "lk_submit") return;
 
     const email = document.getElementById("lk_email");
     const postal = document.getElementById("lk_postal");
+    const errorBox = document.getElementById("lk_error");
 
     email.classList.remove("lk-error");
     postal.classList.remove("lk-error");
+    errorBox.style.display = "none";
 
     if (!email.value) { email.classList.add("lk-error"); return; }
     if (!postal.value) { postal.classList.add("lk-error"); return; }
 
-    // Show spinner
-    const spinner = document.getElementById("lk_spinner");
-    const text = document.getElementById("lk_submit_text");
-
-    spinner.style.display = "block";
-    text.style.display = "none";
+    // Loading animation
+    document.getElementById("lk_submit_text").style.display = "none";
+    document.getElementById("lk_spinner").style.display = "block";
 
     const payload = {
       email: email.value,
@@ -103,58 +109,36 @@
       source: "Localink Widget"
     };
 
-    let ok = true;
+    try {
+      const res = await fetch(FORM_URL, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(payload),
+      });
 
-   try {
-  const res = await fetch(FORM_URL, {
-    method: "POST",
-    headers: { 
-      "Content-Type": "application/json",
-      "Accept": "application/json"
-    },
-    body: JSON.stringify(payload),
-  });
+      if (!res.ok) throw new Error("Formspree error");
 
-  if (!res.ok) throw new Error("Formspree error");
+      // SUCCESS HANDLING (FIXED)
+      const form = document.getElementById("lk_form");
+      const success = document.getElementById("lk_success");
 
-  // Success UI
-const form = document.getElementById("lk_form");
-const success = document.getElementById("lk_success");
-
-// Safety check
-if (!form || !success) {
-  console.error("Modal elements missing");
-  return;
-}
-
-form.style.display = "none";
-success.style.display = "block";
-
-
-} catch (err) {
-  console.error("Submission failed", err);
-}
-
-
-      if (!res.ok) {
-        console.warn("Formspree returned:", res.status);
-        ok = false;
+      if (!form || !success) {
+        console.error("Modal elements missing, cannot toggle success.");
+        return;
       }
-    } catch (err) {
-      console.error("Fetch failed:", err);
-      ok = false;
-    }
 
-    // Always show success UI (MVP flow)
-    const form = document.getElementById("lk_form");
-    const success = document.getElementById("lk_success");
-
-    if (form && success) {
       form.style.display = "none";
       success.style.display = "block";
-    }
 
-  };
+    } catch (err) {
+      errorBox.style.display = "block";
+      console.error("Submission error:", err);
+    } finally {
+      // Always stop spinner
+      document.getElementById("lk_spinner").style.display = "none";
+      document.getElementById("lk_submit_text").style.display = "block";
+    }
+  });
 
 })();
 
