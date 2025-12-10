@@ -107,10 +107,14 @@
 
     try {
       const res = await fetch(FORM_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+  method: "POST",
+  headers: { 
+    "Content-Type": "application/json",
+    "Accept": "application/json"
+  },
+  body: JSON.stringify(payload),
+});
+
 
       if (!res.ok) {
         console.warn("Formspree returned:", res.status);
